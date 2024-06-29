@@ -1,0 +1,29 @@
+services:
+  app:
+    entrypoint:
+    - sleep
+    - infinity
+    image: docker/dev-environments-default:stable-1
+    init: true
+    volumes:
+    - type: bind
+      source: /var/run/docker.sock
+      target: /var/run/docker.sock
+
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_DB: db
+      POSTGRES_USER: skyblock
+      POSTGRES_PASSWORD: skyblock
+    ports:
+    - 5432:5432
+    volumes:
+    - type: volume
+      source: db
+      target: /var/lib/postgresql/data
+
+volumes:
+  db:
+
+
