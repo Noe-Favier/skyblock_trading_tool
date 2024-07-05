@@ -3,16 +3,11 @@ use uuid::Uuid;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct S2tItem {
-    item_name: String,
-
-    #[serde(with = "uuid_serde")]
-    item_uuid: Uuid,
-
-    category: String,
-    tier: String,
-    item_lore: String,
-
-    starting_bid: i64,
-
-    bin: bool,
+    pub item_name: String,
+    pub item_uuid: Option<Uuid>,
+    pub category: String,
+    pub tier: String,
+    pub item_lore: String,
+    pub starting_bid: i64,
+    pub bin: bool,
 }

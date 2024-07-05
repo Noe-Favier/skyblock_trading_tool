@@ -17,11 +17,12 @@ Sample :
 */
 
 #[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct S2tAuction {
-    success: bool,
-    page: i64,
-    total_pages: i64,
-    total_auctions: i64,
-    last_updated: i64,
-    auctions: Vec<S2tItem>,
+    pub success: bool,
+    pub page: i64,
+    pub total_pages: i64,
+    pub total_auctions: i64,
+    pub last_updated: i64,
+    pub auctions: Vec<S2tItem>,
 }

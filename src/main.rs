@@ -47,9 +47,9 @@ async fn main() {
             match res {
                 Ok(_) => {
                     let response_text = res.unwrap().text().await.unwrap();
-                    println!("✅ response_text: {:?}", response_text);
+                    println!("✅ response_text len: {:?}", response_text.len());
                     let i: S2tAuction = serde_json::from_str(&response_text).unwrap();
-                    println!("✅ {:?}", i);
+                    println!("✅ {:?} auctions found", i.auctions.len());
                 }
                 Err(e) => {
                     eprintln!("❌ Error: {}", e);
