@@ -4,6 +4,8 @@ use uuid::Uuid;
 #[derive(Serialize, Deserialize, Debug)]
 pub struct S2tItem {
     item_name: String,
+
+    #[serde(with = "uuid_serde")]
     item_uuid: Uuid,
 
     category: String,
