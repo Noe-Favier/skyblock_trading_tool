@@ -78,7 +78,7 @@ async fn main() {
                                     }
                                     if item.bin {
                                         println!(
-                                            "{} - ✅ New auction: {} : {}",
+                                            "{} - *️⃣  New auction: {} : {}",
                                             loop_count, item.item_name, item.starting_bid
                                         );
                                         new_auctions += 1;
