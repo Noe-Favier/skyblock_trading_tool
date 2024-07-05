@@ -16,6 +16,7 @@ Sample :
 
 */
 
+#[allow(dead_code)]
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct S2tAuction {
