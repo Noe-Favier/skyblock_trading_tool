@@ -1,27 +1,36 @@
+#[macro_use]
+extern crate diesel_migrations;
+
 mod auction_response;
 mod item;
 mod schema;
 
 use auction_response::S2tAuction;
-use diesel::{
-    pg::PgConnection,
-    r2d2::{ConnectionManager, Pool}, ExpressionMethods, RunQueryDsl,
-};
-use dotenv::dotenv;
-use lazy_static::lazy_static;
+
+use tokio::task;
+use tokio::time::{sleep, Duration};
 use reqwest::{
     header::{HeaderMap, HeaderValue},
     Client,
 };
+use diesel::{
+    pg::PgConnection,
+    r2d2::{ConnectionManager, Pool}, ExpressionMethods, RunQueryDsl,
+};
+use diesel_migrations::EmbeddedMigrations;
+use diesel_migrations::{embed_migrations, MigrationHarness};
+
+use dotenv::dotenv;
+use lazy_static::lazy_static;
 use std::{env::var, sync::RwLock};
-use tokio::task;
-use tokio::time::{sleep, Duration};
 use uuid::Uuid;
 use schema::s2t_item::dsl::*;
+
 lazy_static! {
     static ref LAST_AUCTION: RwLock<Uuid> = RwLock::new(Uuid::nil());
 }
 
+pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./migrations");
 pub fn get_connection_pool(url: String) -> Pool<ConnectionManager<PgConnection>> {
     let manager = ConnectionManager::<PgConnection>::new(url);
 
@@ -44,6 +53,13 @@ async fn main() {
     println!("✅ DATABASE_URL: {}", database_url);
 
     let pool = get_connection_pool(database_url);
+    {
+        //migration
+        let conn = &mut pool.get().unwrap();
+        conn.run_pending_migrations(MIGRATIONS)
+            .expect("❌ Error running migrations");
+    }
+    
     let client = Client::new();
     let mut headers = HeaderMap::new();
     headers.insert(

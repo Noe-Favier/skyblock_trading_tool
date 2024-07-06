@@ -10,7 +10,7 @@ in first place, fill the `.env` file with your own values.
 
 > `cp .env.example .env`
 
-then, you can use the docker-compose file to run the project.
+then, you can use the docker-compose file to run the project with :
 
 ```bash
 docker-compose -p skyblock-tt up -d

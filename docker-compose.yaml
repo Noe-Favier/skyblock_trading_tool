@@ -2,7 +2,7 @@ services:
   skydb:
     image: postgres:16
     environment:
-      POSTGRES_DB: db
+      POSTGRES_DB: skyblock
       POSTGRES_USER: skyblock
       POSTGRES_PASSWORD: skyblock
     ports:
@@ -15,7 +15,13 @@ services:
     networks:
       - skyblock
 
-
+  indexer:
+    build: .
+    container_name: skyblock-indexer
+    networks:
+      - skyblock
+    depends_on:
+      - skydb
 
 volumes:
   db:
@@ -23,5 +29,3 @@ volumes:
 networks:
   skyblock:
     driver: bridge
-
-

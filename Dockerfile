@@ -6,11 +6,19 @@ COPY . .
 
 RUN apt-get update && apt-get install -y libpq-dev libssl-dev pkg-config
 
-RUN cargo install
-RUN cargo install diesel_cli --no-default-features --features "postgres"
-
 RUN cargo build --release
 
-# wait until the database is ready to run the migrations
-RUN while ! diesel migration run; do sleep 1; done
+FROM debian:latest as runtime
 
+WORKDIR /usr/src/app
+
+RUN apt-get update && apt-get install -y libpq-dev libssl-dev pkg-config
+RUN mkdir -p /usr/src/app/migrations
+
+COPY --from=builder /usr/src/app/target/release/s2t .
+COPY --from=builder /usr/src/app/.env .
+COPY --from=builder /usr/src/app/migrations/* ./migrations/
+COPY --from=builder /usr/src/app/Cargo.toml .
+
+
+CMD [ "./s2t" ]
