@@ -4,11 +4,11 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+diesel = { version = "2.2.1", features = ["postgres", "r2d2", "uuid"] }
+uuid = {version = "1.9.1", features = ["serde", "v4"]}
 tokio = { version = "1.38.0", features = ["full"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0.118"
 lazy_static = "1.4"
-sea-orm = "0.12.15"
 reqwest = "0.12.5"
 dotenv = "0.15.0"
-uuid = "1.9.1"

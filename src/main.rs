@@ -1,7 +1,12 @@
 mod auction_response;
 mod item;
+mod schema;
 
 use auction_response::S2tAuction;
+use diesel::{
+    pg::PgConnection,
+    r2d2::{ConnectionManager, Pool}, ExpressionMethods, RunQueryDsl,
+};
 use dotenv::dotenv;
 use lazy_static::lazy_static;
 use reqwest::{
@@ -12,9 +17,18 @@ use std::{env::var, sync::RwLock};
 use tokio::task;
 use tokio::time::{sleep, Duration};
 use uuid::Uuid;
-
+use schema::s2t_item::dsl::*;
 lazy_static! {
     static ref LAST_AUCTION: RwLock<Uuid> = RwLock::new(Uuid::nil());
+}
+
+pub fn get_connection_pool(url: String) -> Pool<ConnectionManager<PgConnection>> {
+    let manager = ConnectionManager::<PgConnection>::new(url);
+
+    return Pool::builder()
+        .test_on_check_out(true)
+        .build(manager)
+        .expect("❌ Could not build connection pool");
 }
 
 #[tokio::main]
@@ -24,9 +38,12 @@ async fn main() {
     dotenv().ok();
     let api_key: String = var("API_KEY").expect("API_KEY not set");
     let api_url: String = var("API_URL").expect("API_URL not set");
+    let database_url = var("DATABASE_URL").expect("DATABASE_URL must be set");
     println!("✅ API_KEY: {}", api_key);
     println!("✅ API_URL: {}", api_url);
+    println!("✅ DATABASE_URL: {}", database_url);
 
+    let pool = get_connection_pool(database_url);
     let client = Client::new();
     let mut headers = HeaderMap::new();
     headers.insert(
@@ -46,6 +63,7 @@ async fn main() {
         let headers_clone = headers.clone();
         let api_url_clone = api_url.clone();
 
+        let pool = pool.clone();
         task::spawn(async move {
             let res = client_clone
                 .get(format!("{}/{}", &api_url_clone, "auctions"))
@@ -81,8 +99,30 @@ async fn main() {
                                             "{} - *️⃣  New auction: {} : {}",
                                             loop_count, item.item_name, item.starting_bid
                                         );
+                                        {
+                                            let conn = &mut pool.get().unwrap();
+                                            if let Err(_err) = diesel::insert_into(s2t_item)
+                                                .values(
+                                                    (
+                                                        auction_id.eq(item.auction_id),
+                                                        item_name.eq(&item.item_name),
+                                                        item_uuid.eq(item.item_uuid),
+                                                        category.eq(&item.category),
+                                                        tier.eq(&item.tier),
+                                                        item_lore.eq(&item.item_lore),
+                                                        starting_bid.eq(item.starting_bid),
+                                                    )
+                                                )
+                                                .execute(conn)
+                                                {
+                                                    //ERROR HANDLING
+                                                    eprintln!("❌ Error inserting item: {:?}", _err);
+                                                }
+                                        }
+
                                         new_auctions += 1;
                                     }
+
                                     i += 1;
                                 }
                                 *last_auction = auction_response.auctions[0].auction_id;
