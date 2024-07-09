@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS p_s2t_item;
