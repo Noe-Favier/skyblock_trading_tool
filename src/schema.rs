@@ -8,8 +8,7 @@ diesel::table! {
         item_uuid -> Nullable<Uuid>,
         category -> Text,
         tier -> Text,
-        item_lore -> Text,
-        starting_bid -> Int8,
+        bid -> Int8,
         sell_number -> Int8,
     }
 }

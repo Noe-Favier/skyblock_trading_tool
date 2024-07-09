@@ -7,24 +7,25 @@ mod schema;
 
 use auction_response::S2tAuction;
 
-use tokio::task;
-use tokio::time::{sleep, Duration};
+use diesel::{
+    pg::PgConnection,
+    r2d2::{ConnectionManager, Pool},
+    ExpressionMethods, RunQueryDsl,
+};
+use diesel_migrations::EmbeddedMigrations;
+use diesel_migrations::{embed_migrations, MigrationHarness};
 use reqwest::{
     header::{HeaderMap, HeaderValue},
     Client,
 };
-use diesel::{
-    pg::PgConnection,
-    r2d2::{ConnectionManager, Pool}, ExpressionMethods, RunQueryDsl,
-};
-use diesel_migrations::EmbeddedMigrations;
-use diesel_migrations::{embed_migrations, MigrationHarness};
+use tokio::task;
+use tokio::time::{sleep, Duration};
 
 use dotenv::dotenv;
 use lazy_static::lazy_static;
+use schema::s2t_item::dsl::*;
 use std::{env::var, sync::RwLock};
 use uuid::Uuid;
-use schema::s2t_item::dsl::*;
 
 lazy_static! {
     static ref LAST_AUCTION: RwLock<Uuid> = RwLock::new(Uuid::nil());
@@ -59,7 +60,18 @@ async fn main() {
         conn.run_pending_migrations(MIGRATIONS)
             .expect("❌ Error running migrations");
     }
-    
+
+    {
+        //cron
+        let mut sched = JobScheduler::new().await?;
+        let conn = &mut pool.get().unwrap();
+        sched
+            .add(Job::new("0 */6 * * *", |_uuid, _l| {
+                println!("Running job");
+            })?)
+            .await?;
+    }
+
     let client = Client::new();
     let mut headers = HeaderMap::new();
     headers.insert(
@@ -118,22 +130,20 @@ async fn main() {
                                         {
                                             let conn = &mut pool.get().unwrap();
                                             if let Err(_err) = diesel::insert_into(s2t_item)
-                                                .values(
-                                                    (
-                                                        auction_id.eq(item.auction_id),
-                                                        item_name.eq(&item.item_name),
-                                                        item_uuid.eq(item.item_uuid),
-                                                        category.eq(&item.category),
-                                                        tier.eq(&item.tier),
-                                                        item_lore.eq(&item.item_lore),
-                                                        starting_bid.eq(item.starting_bid),
-                                                    )
-                                                )
+                                                .values((
+                                                    auction_id.eq(item.auction_id),
+                                                    item_name.eq(&item.item_name),
+                                                    item_uuid.eq(item.item_uuid),
+                                                    category.eq(&item.category),
+                                                    tier.eq(&item.tier),
+                                                    item_lore.eq(&item.item_lore),
+                                                    starting_bid.eq(item.starting_bid),
+                                                ))
                                                 .execute(conn)
-                                                {
-                                                    //ERROR HANDLING
-                                                    eprintln!("❌ Error inserting item: {:?}", _err);
-                                                }
+                                            {
+                                                //ERROR HANDLING
+                                                eprintln!("❌ Error inserting item: {:?}", _err);
+                                            }
                                         }
 
                                         new_auctions += 1;
