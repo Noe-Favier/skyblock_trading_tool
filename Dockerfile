@@ -12,7 +12,7 @@ FROM debian:latest as runtime
 
 WORKDIR /usr/src/app
 
-RUN apt-get update && apt-get install -y libpq-dev libssl-dev pkg-config
+RUN apt-get update && apt-get install -y libpq-dev libssl-dev pkg-config curl
 RUN mkdir -p /usr/src/app/migrations
 
 COPY --from=builder /usr/src/app/target/release/s2t .

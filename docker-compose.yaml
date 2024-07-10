@@ -6,25 +6,26 @@ services:
       POSTGRES_USER: skyblock
       POSTGRES_PASSWORD: skyblock
     ports:
-    - 5432:5432
+      - 5432:5432
     volumes:
-    - type: volume
-      source: db
-      target: /var/lib/postgresql/data
+      - type: volume
+        source: db
+        target: /var/lib/postgresql/data
     container_name: skydb
     networks:
       - skyblock
 
-  # indexer:
-  #   build: .
-  #   container_name: skyblock-indexer
-  #   networks:
-  #     - skyblock
-  #   depends_on:
-  #     - skydb
+  indexer:
+    build: .
+    container_name: skyblock-indexer
+    networks:
+      - skyblock
+    depends_on:
+      - skydb
 
 volumes:
   db:
+
 
 networks:
   skyblock:
