@@ -18,13 +18,18 @@ use reqwest::{
     header::{HeaderMap, HeaderValue},
     Client,
 };
+use std::{
+    env::var,
+    sync::RwLock,
+    sync::{Arc, Mutex},
+};
 use tokio::task;
 use tokio::time::{sleep, Duration};
 
 use dotenv::dotenv;
 use lazy_static::lazy_static;
 use schema::s2t_item::dsl::*;
-use std::{env::var, sync::RwLock};
+use tokio_cron_scheduler::{Job, JobScheduler};
 use uuid::Uuid;
 
 lazy_static! {
@@ -63,13 +68,45 @@ async fn main() {
 
     {
         //cron
-        let mut sched = JobScheduler::new().await?;
-        let conn = &mut pool.get().unwrap();
-        sched
-            .add(Job::new("0 */6 * * *", |_uuid, _l| {
-                println!("Running job");
-            })?)
-            .await?;
+        let sched = {
+            let result = JobScheduler::new().await;
+            match result {
+                Ok(scheduler) => scheduler,
+                Err(err) => {
+                    eprintln!("❌ Error creating job scheduler: {}", err);
+                    return;
+                }
+            }
+        };
+
+        let conn = pool.get().unwrap();
+        let conn_mutex = Arc::new(Mutex::new(conn));
+        let job = Job::new("0 */6 * * *", move |_uuid, _lock| {
+            // Every 6 hours
+            println!("🔔 Compile job triggered");
+
+            let mut conn_lock = conn_mutex.lock().unwrap();
+            conn_lock
+                .build_transaction()
+                .read_write()
+                .run::<_, diesel::result::Error, _>(|conn_lock| {
+                    diesel::sql_query(
+                        "INSERT INTO s2t_item_compiled (item_name, item_uuid, category, tier, item_lore, starting_bid, created_at)
+                        SELECT item_name, item_uuid, category, tier, item_lore, starting_bid, now() FROM s2t_item",
+                    )
+                    .execute(&mut *conn_lock)?;
+
+                    diesel::sql_query("TRUNCATE s2t_item").execute(&mut *conn_lock)?;
+
+                    println!("❇️ Items compiled");
+                    Ok(())
+                }).expect("❌ Error compiling items");
+        });
+
+        match sched.add(job.unwrap()).await {
+            Ok(_) => println!("✅ Job added"),
+            Err(err) => eprintln!("❌ Error adding job: {}", err),
+        }
     }
 
     let client = Client::new();

@@ -15,13 +15,13 @@ services:
     networks:
       - skyblock
 
-  indexer:
-    build: .
-    container_name: skyblock-indexer
-    networks:
-      - skyblock
-    depends_on:
-      - skydb
+  # indexer:
+  #   build: .
+  #   container_name: skyblock-indexer
+  #   networks:
+  #     - skyblock
+  #   depends_on:
+  #     - skydb
 
 volumes:
   db:
