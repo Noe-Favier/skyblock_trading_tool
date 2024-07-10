@@ -66,48 +66,43 @@ async fn main() {
             .expect("❌ Error running migrations");
     }
 
-    {
-        //cron
-        let sched = {
-            let result = JobScheduler::new().await;
-            match result {
-                Ok(scheduler) => scheduler,
-                Err(err) => {
-                    eprintln!("❌ Error creating job scheduler: {}", err);
-                    return;
-                }
+    //cron
+    let sched = {
+        let result = JobScheduler::new().await;
+        match result {
+            Ok(scheduler) => scheduler,
+            Err(err) => {
+                eprintln!("❌ Error creating job scheduler: {}", err);
+                return;
             }
-        };
-
-        let conn = pool.get().unwrap();
-        let conn_mutex = Arc::new(Mutex::new(conn));
-        let job = Job::new("0 */6 * * *", move |_uuid, _lock| {
-            // Every 6 hours
-            println!("🔔 Compile job triggered");
-
-            let mut conn_lock = conn_mutex.lock().unwrap();
-            conn_lock
-                .build_transaction()
-                .read_write()
-                .run::<_, diesel::result::Error, _>(|conn_lock| {
-                    diesel::sql_query(
-                        "INSERT INTO s2t_item_compiled (item_name, item_uuid, category, tier, item_lore, starting_bid, created_at)
-                        SELECT item_name, item_uuid, category, tier, item_lore, starting_bid, now() FROM s2t_item",
-                    )
-                    .execute(&mut *conn_lock)?;
-
-                    diesel::sql_query("TRUNCATE s2t_item").execute(&mut *conn_lock)?;
-
-                    println!("❇️ Items compiled");
-                    Ok(())
-                }).expect("❌ Error compiling items");
-        });
-
-        match sched.add(job.unwrap()).await {
-            Ok(_) => println!("✅ Job added"),
-            Err(err) => eprintln!("❌ Error adding job: {}", err),
         }
+    };
+
+    let conn = pool.get().unwrap();
+    let conn_mutex = Arc::new(Mutex::new(conn));
+    let job = Job::new("0 * */6 * * * *", move |_uuid, _lock| {
+        // Every 6 hours
+        println!("🔔 Compile job triggered ...");
+
+        let mut conn_lock = conn_mutex.lock().unwrap();
+        conn_lock
+            .build_transaction()
+            .read_write()
+            .run::<_, diesel::result::Error, _>(|conn_lock| {
+                diesel::sql_query("CALL compile_items()").execute(&mut *conn_lock)?;
+                println!("🔔 ❇️  Items compiled");
+                Ok(())
+            })
+            .expect("🔔 ❌  Error compiling items");
+    })
+    .expect("❌ Error creating job");
+
+    match sched.add(job).await {
+        Ok(_) => println!("✅ 🔔 JOB COMPILE ADDED"),
+        Err(err) => eprintln!("❌ Error adding job: {}", err),
     }
+
+    sched.start().await.expect("❌ Error starting scheduler");
 
     let client = Client::new();
     let mut headers = HeaderMap::new();
