@@ -31,6 +31,7 @@ use lazy_static::lazy_static;
 use schema::s2t_item::dsl::*;
 use tokio_cron_scheduler::{Job, JobScheduler};
 use uuid::Uuid;
+use warp::Filter;
 
 lazy_static! {
     static ref LAST_AUCTION: RwLock<Uuid> = RwLock::new(Uuid::nil());
@@ -58,15 +59,26 @@ async fn main() {
     println!("✅ API_URL: {}", api_url);
     println!("✅ DATABASE_URL: {}", database_url);
 
+    // HTTP HANDLER
+
+    let main_route = warp::path::end().map(|| {
+        println!("GET request received");
+        warp::reply::html("Hello, World!")
+    });
+    let routes = main_route;
+    tokio::spawn(async move {
+        warp::serve(routes).run(([0, 0, 0, 0], 3030)).await;
+    });
+
+    // MIGRATION
     let pool = get_connection_pool(database_url);
     {
-        //migration
         let conn = &mut pool.get().unwrap();
         conn.run_pending_migrations(MIGRATIONS)
             .expect("❌ Error running migrations");
     }
 
-    //cron
+    // CRON JOB
     let sched = {
         let result = JobScheduler::new().await;
         match result {
@@ -77,7 +89,6 @@ async fn main() {
             }
         }
     };
-
     let conn = pool.get().unwrap();
     let conn_mutex = Arc::new(Mutex::new(conn));
     let job = Job::new("0 * */6 * * * *", move |_uuid, _lock| {
@@ -104,6 +115,8 @@ async fn main() {
 
     sched.start().await.expect("❌ Error starting scheduler");
 
+    // HTTP CLIENT
+
     let client = Client::new();
     let mut headers = HeaderMap::new();
     headers.insert(
@@ -112,8 +125,9 @@ async fn main() {
     );
     println!("✅ headers: {:?}", headers);
 
-    println!("--- xxxxxxxx ---");
+    // INDEXER
 
+    println!("--- xxxxxxxx ---");
     let mut loop_count: u64 = 0;
     loop {
         loop_count += 1;
