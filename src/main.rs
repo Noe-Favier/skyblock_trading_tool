@@ -3,6 +3,7 @@ extern crate diesel_migrations;
 
 mod auction_response;
 mod fetch;
+mod http;
 mod item;
 mod schema;
 
@@ -56,16 +57,8 @@ async fn main() {
     println!("✅ API_URL: {}", api_url);
     println!("✅ DATABASE_URL: {}", database_url);
 
-    // HTTP HANDLER
-
-    let main_route = warp::path::end().map(|| {
-        println!("GET request received");
-        warp::reply::html("Hello, World!")
-    });
-    let routes = main_route;
-    tokio::spawn(async move {
-        warp::serve(routes).run(([0, 0, 0, 0], 3030)).await;
-    });
+    // ROUTES
+    http::start_http_handler();
 
     // MIGRATION
     let pool = get_connection_pool(database_url);
