@@ -2,34 +2,33 @@
 extern crate diesel_migrations;
 
 use std::{
-    env::var
-    ,
+    env::var,
     sync::{Arc, Mutex},
 };
 
 use diesel::{
-    ExpressionMethods,
     pg::PgConnection,
-    r2d2::{ConnectionManager, Pool}, RunQueryDsl,
+    r2d2::{ConnectionManager, Pool},
+    ExpressionMethods, RunQueryDsl,
 };
-use diesel_migrations::{embed_migrations, MigrationHarness};
 use diesel_migrations::EmbeddedMigrations;
+use diesel_migrations::{embed_migrations, MigrationHarness};
 use dotenv::dotenv;
 use reqwest::{
-    Client,
     header::{HeaderMap, HeaderValue},
+    Client,
 };
-use tokio::time::{Duration, sleep};
+use tokio::time::{sleep, Duration};
 use tokio_cron_scheduler::{Job, JobScheduler};
 use warp::Filter;
 
 mod auction_response;
+mod bo;
+mod dto;
 mod fetch;
 mod http;
 mod item;
 mod schema;
-mod dto;
-
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./migrations");
 pub fn get_connection_pool(url: String) -> Pool<ConnectionManager<PgConnection>> {
     let manager = ConnectionManager::<PgConnection>::new(url);
@@ -107,7 +106,7 @@ async fn main() {
     println!("✅ headers: {:?}", headers);
 
     // HTTP HANDLER
-    http::start_http_handler(sched);
+    http::start_http_handler(sched, pool.clone());
 
     // INDEXER
 

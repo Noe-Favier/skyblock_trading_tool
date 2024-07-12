@@ -1,5 +1,10 @@
-use crate::dto::page_dto::PageDto;
+use std::borrow::BorrowMut;
 
+use crate::bo::p_s2t_item::PS2tItem;
+use crate::schema::p_s2t_item::bid;
+use crate::schema::p_s2t_item::dsl::p_s2t_item;
+use diesel::r2d2::{ConnectionManager, Pool};
+use diesel::{ExpressionMethods, PgConnection, QueryDsl, RunQueryDsl};
 use tokio_cron_scheduler::JobScheduler;
 use warp::Filter;
 
@@ -9,15 +14,24 @@ use warp::Filter;
 /state
 */
 
-pub fn start_http_handler(scheduler: JobScheduler) {
+const PAGE_SIZE: i64 = 100;
+
+pub fn start_http_handler(scheduler: JobScheduler, pool: Pool<ConnectionManager<PgConnection>>) {
     let main_route = warp::path::end().map(|| {
         println!("GET request received");
         warp::reply::html("Hello, World!")
     });
 
-    let page_route = warp::path!("page" / i32).map(|page: i32| {
-        println!("GET request received for page: {}", page);
-        warp::reply::html(format!("Hello, World! Page: {}", page))
+    let page_route = warp::path!("page" / i64).map(|page: i64| {
+        let conn = pool.get().expect("Failed to get DB connection from pool");
+
+        let items: Vec<PS2tItem> = p_s2t_item
+            .limit(PAGE_SIZE)
+            .offset(page * PAGE_SIZE)
+            .load::<PS2tItem>(&conn)
+            .expect("Error loading items");
+
+        warp::reply::json(&items)
     });
 
     let routes = main_route.or(page_route);
