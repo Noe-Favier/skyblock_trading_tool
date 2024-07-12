@@ -130,10 +130,7 @@ checksum = "a21f936df1771bf62b77f047b726c4625ff2e8aa607c01ec06e5a05bd8463401"
 dependencies = [
  "android-tzdata",
  "iana-time-zone",
- "js-sys",
  "num-traits",
- "serde",
- "wasm-bindgen",
  "windows-targets 0.52.5",
 ]
 
@@ -1292,7 +1289,6 @@ checksum = "f3cb5ba0dc43242ce17de99c180e96db90b235b8a9fdc9543c96d2209116bd9f"
 name = "s2t"
 version = "0.1.0"
 dependencies = [
- "chrono",
  "diesel",
  "diesel_migrations",
  "dotenv",

@@ -9,7 +9,7 @@ use std::{
 use diesel::{
     pg::PgConnection,
     r2d2::{ConnectionManager, Pool},
-    ExpressionMethods, RunQueryDsl,
+    RunQueryDsl,
 };
 use diesel_migrations::EmbeddedMigrations;
 use diesel_migrations::{embed_migrations, MigrationHarness};
@@ -20,7 +20,6 @@ use reqwest::{
 };
 use tokio::time::{sleep, Duration};
 use tokio_cron_scheduler::{Job, JobScheduler};
-use warp::Filter;
 
 mod auction_response;
 mod bo;

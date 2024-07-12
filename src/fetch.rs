@@ -10,25 +10,17 @@ use diesel::{
     r2d2::{ConnectionManager, Pool},
     ExpressionMethods, RunQueryDsl,
 };
-use diesel_migrations::EmbeddedMigrations;
-use diesel_migrations::{embed_migrations, MigrationHarness};
 use reqwest::{
-    header::{HeaderMap, HeaderValue},
+    header::{HeaderMap},
     Client,
 };
 use std::{
-    env::var,
     sync::RwLock,
-    sync::{Arc, Mutex},
 };
 use tokio::task;
-use tokio::time::{sleep, Duration};
 
-use dotenv::dotenv;
 use lazy_static::lazy_static;
-use tokio_cron_scheduler::{Job, JobScheduler};
 use uuid::Uuid;
-use warp::Filter;
 
 pub fn fetch_auction(
     client: Client,
