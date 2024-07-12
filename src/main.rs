@@ -1,39 +1,34 @@
 #[macro_use]
 extern crate diesel_migrations;
 
+use std::{
+    env::var
+    ,
+    sync::{Arc, Mutex},
+};
+
+use diesel::{
+    ExpressionMethods,
+    pg::PgConnection,
+    r2d2::{ConnectionManager, Pool}, RunQueryDsl,
+};
+use diesel_migrations::{embed_migrations, MigrationHarness};
+use diesel_migrations::EmbeddedMigrations;
+use dotenv::dotenv;
+use reqwest::{
+    Client,
+    header::{HeaderMap, HeaderValue},
+};
+use tokio::time::{Duration, sleep};
+use tokio_cron_scheduler::{Job, JobScheduler};
+use warp::Filter;
+
 mod auction_response;
 mod fetch;
 mod http;
 mod item;
 mod schema;
-
-use auction_response::S2tAuction;
-
-use diesel::{
-    pg::PgConnection,
-    r2d2::{ConnectionManager, Pool},
-    ExpressionMethods, RunQueryDsl,
-};
-use diesel_migrations::EmbeddedMigrations;
-use diesel_migrations::{embed_migrations, MigrationHarness};
-use reqwest::{
-    header::{HeaderMap, HeaderValue},
-    Client,
-};
-use std::{
-    env::var,
-    sync::RwLock,
-    sync::{Arc, Mutex},
-};
-use tokio::task;
-use tokio::time::{sleep, Duration};
-
-use dotenv::dotenv;
-use lazy_static::lazy_static;
-use schema::s2t_item::dsl::*;
-use tokio_cron_scheduler::{Job, JobScheduler};
-use uuid::Uuid;
-use warp::Filter;
+mod dto;
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./migrations");
 pub fn get_connection_pool(url: String) -> Pool<ConnectionManager<PgConnection>> {
@@ -56,9 +51,6 @@ async fn main() {
     println!("✅ API_KEY: {}", api_key);
     println!("✅ API_URL: {}", api_url);
     println!("✅ DATABASE_URL: {}", database_url);
-
-    // ROUTES
-    http::start_http_handler();
 
     // MIGRATION
     let pool = get_connection_pool(database_url);
@@ -102,7 +94,6 @@ async fn main() {
         Ok(_) => println!("✅ 🔔 JOB COMPILE ADDED"),
         Err(err) => eprintln!("❌ Error adding job: {}", err),
     }
-
     sched.start().await.expect("❌ Error starting scheduler");
 
     // HTTP CLIENT
@@ -114,6 +105,9 @@ async fn main() {
         HeaderValue::from_str(&api_key).expect("Invalid API key"),
     );
     println!("✅ headers: {:?}", headers);
+
+    // HTTP HANDLER
+    http::start_http_handler(sched);
 
     // INDEXER
 

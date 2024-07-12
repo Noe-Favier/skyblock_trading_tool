@@ -1,6 +1,15 @@
+use crate::dto::page_dto::PageDto;
+
+use tokio_cron_scheduler::JobScheduler;
 use warp::Filter;
 
-pub fn start_http_handler() {
+/*
+/page/{page_id}
+/item/{item_name}
+/state
+*/
+
+pub fn start_http_handler(scheduler: JobScheduler) {
     let main_route = warp::path::end().map(|| {
         println!("GET request received");
         warp::reply::html("Hello, World!")
