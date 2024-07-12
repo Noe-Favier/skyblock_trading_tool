@@ -2,6 +2,7 @@
 extern crate diesel_migrations;
 
 mod auction_response;
+mod fetch;
 mod item;
 mod schema;
 
@@ -32,10 +33,6 @@ use schema::s2t_item::dsl::*;
 use tokio_cron_scheduler::{Job, JobScheduler};
 use uuid::Uuid;
 use warp::Filter;
-
-lazy_static! {
-    static ref LAST_AUCTION: RwLock<Uuid> = RwLock::new(Uuid::nil());
-}
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./migrations");
 pub fn get_connection_pool(url: String) -> Pool<ConnectionManager<PgConnection>> {
@@ -132,86 +129,13 @@ async fn main() {
     loop {
         loop_count += 1;
         println!("--- loop {} ---", loop_count);
-
-        let client_clone = client.clone();
-        let headers_clone = headers.clone();
-        let api_url_clone = api_url.clone();
-
-        let pool = pool.clone();
-        task::spawn(async move {
-            let res = client_clone
-                .get(format!("{}/{}", &api_url_clone, "auctions"))
-                .headers(headers_clone)
-                .send()
-                .await;
-
-            match res {
-                Ok(response) => match response.text().await {
-                    Ok(response_text) => match serde_json::from_str::<S2tAuction>(&response_text) {
-                        Ok(auction_response) => {
-                            let auction_count = auction_response.auctions.len();
-                            println!("{} - ✅ Auction [{}]", loop_count, auction_count);
-
-                            let mut last_auction = LAST_AUCTION.write().unwrap();
-                            if last_auction.is_nil() {
-                                *last_auction =
-                                    auction_response.auctions[auction_count - 1].auction_id;
-                            }
-
-                            if auction_response.auctions[0].auction_id == *last_auction {
-                                println!("{} - ✅ No new auction ({})", loop_count, last_auction);
-                            } else {
-                                let mut i = 0;
-                                let mut new_auctions = 0;
-                                while i < auction_count {
-                                    let item = &auction_response.auctions[i];
-                                    if item.auction_id == *last_auction {
-                                        break;
-                                    }
-                                    if item.bin {
-                                        println!(
-                                            "{} - *️⃣  New auction: {} : {}",
-                                            loop_count, item.item_name, item.starting_bid
-                                        );
-                                        {
-                                            let conn = &mut pool.get().unwrap();
-                                            if let Err(_err) = diesel::insert_into(s2t_item)
-                                                .values((
-                                                    auction_id.eq(item.auction_id),
-                                                    item_name.eq(&item.item_name),
-                                                    item_uuid.eq(item.item_uuid),
-                                                    category.eq(&item.category),
-                                                    tier.eq(&item.tier),
-                                                    item_lore.eq(&item.item_lore),
-                                                    starting_bid.eq(item.starting_bid),
-                                                ))
-                                                .execute(conn)
-                                            {
-                                                //ERROR HANDLING
-                                                eprintln!("❌ Error inserting item: {:?}", _err);
-                                            }
-                                        }
-
-                                        new_auctions += 1;
-                                    }
-
-                                    i += 1;
-                                }
-                                *last_auction = auction_response.auctions[0].auction_id;
-                                println!(
-                                    "{} - ✅ Total new auctions: {}",
-                                    loop_count, new_auctions
-                                );
-                            }
-                        }
-                        Err(e) => eprintln!("❌ Error parsing JSON: {}", e),
-                    },
-                    Err(e) => eprintln!("❌ Error reading response text: {}", e),
-                },
-                Err(e) => eprintln!("❌ Error sending request: {}", e),
-            }
-        });
-
+        fetch::fetch_auction(
+            client.clone(),
+            api_url.clone(),
+            headers.clone(),
+            loop_count.clone(),
+            pool.clone(),
+        );
         sleep(Duration::from_secs(1)).await;
     }
 }
