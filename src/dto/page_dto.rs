@@ -1,10 +1,10 @@
+use crate::bo::p_s2t_item::PS2tItem;
 use serde::Serialize;
-use crate::dto::util::p_item_dto::PItem;
 
 #[derive(Serialize)]
 pub struct PageDto {
-    pub page: Vec<PItem>,
-    pub page_size: u64,
-    pub total_pages: u64,
-    pub total_items: u64,
+    pub page: Vec<PS2tItem>,
+    pub page_size: i64,
+    pub total_pages: i64,
+    pub total_items: i64,
 }

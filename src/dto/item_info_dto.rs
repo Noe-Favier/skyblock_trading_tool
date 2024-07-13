@@ -1,9 +1,9 @@
 use serde::Serialize;
 
-use crate::dto::util::p_item_dto::PItem;
+use crate::bo::p_s2t_item::PS2tItem;
 
 #[derive(Serialize)]
 pub struct ItemInfoDto {
-    item: PItem,
+    item: PS2tItem,
     image_url: String,
 }
