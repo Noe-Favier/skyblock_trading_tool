@@ -10,6 +10,7 @@ diesel::table! {
         tier -> Text,
         bid -> Int8,
         sell_number -> Int8,
+        item_name_slug -> Text,
     }
 }
 
@@ -26,4 +27,7 @@ diesel::table! {
     }
 }
 
-diesel::allow_tables_to_appear_in_same_query!(p_s2t_item, s2t_item,);
+diesel::allow_tables_to_appear_in_same_query!(
+    p_s2t_item,
+    s2t_item,
+);

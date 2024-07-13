@@ -23,4 +23,6 @@ pub struct PS2tItem {
     pub bid: i64,
     #[diesel(sql_type = diesel::sql_types::Int8)]
     pub sell_number: i64,
+    #[diesel(sql_type = diesel::sql_types::Text)]
+    pub item_name_slug: String,
 }

@@ -3,8 +3,9 @@ use serde::Serialize;
 
 #[derive(Serialize)]
 pub struct PageDto {
-    pub page: Vec<PS2tItem>,
     pub page_size: i64,
     pub total_pages: i64,
     pub total_items: i64,
+    pub items_in_page: i64,
+    pub page: Vec<PS2tItem>,
 }
