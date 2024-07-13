@@ -27,6 +27,7 @@ mod dto;
 mod fetch;
 mod http;
 mod item;
+mod open_api_doc;
 mod schema;
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./migrations");
 pub fn get_connection_pool(url: String) -> Pool<ConnectionManager<PgConnection>> {

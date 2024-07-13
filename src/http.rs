@@ -1,18 +1,17 @@
-use std::str::FromStr;
-
 use crate::bo::p_s2t_item::PS2tItem;
 use crate::dto::item_info_dto::ItemInfoDto;
 use crate::dto::page_dto::PageDto;
 use crate::dto::state_dto::StateDto;
+use crate::open_api_doc::ApiDoc;
 use crate::schema::p_s2t_item::dsl::p_s2t_item;
-use crate::schema::p_s2t_item::dsl::{created_at, id, item_name, item_name_slug};
-use diesel::dsl::{count_distinct, Select};
+use crate::schema::p_s2t_item::dsl::{created_at, item_name, item_name_slug};
+use diesel::dsl::count_distinct;
 use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::ExpressionMethods;
 use diesel::{PgConnection, QueryDsl, RunQueryDsl};
-use serde::Serialize;
 use tokio_cron_scheduler::JobScheduler;
-use warp::{http, Filter, Rejection, Reply};
+use utoipa::OpenApi;
+use warp::{http, Filter, Rejection};
 
 /*
 /page/{page_id}
@@ -86,23 +85,38 @@ pub fn start_http_handler(scheduler: JobScheduler, pool: Pool<ConnectionManager<
 
             Ok(warp::reply::json(&info)) as Result<_, Rejection>
         }
-
-        let pool_clone = pool_clone.clone();
-        let state_route = warp::path("state").and_then(move || {
-            let pool_clone = pool_clone.clone();
-            async move {
-                let conn = &mut pool_clone.get().unwrap();
-
-                time_before_compil = scheduler.get_next_run_time().as_secs();
-                let state = StateDto {
-                    time_before_compil: time_before_compil,
-                };
-
-                Ok(warp::reply::json(&state)) as Result<_, Rejection>
-            }
     });
 
-    let routes = main_route.or(page_route).or(item_route).or(state_route);
+    let state_route = warp::path("state").and_then(move || {
+        let mut scheduler_clone = scheduler.clone();
+        async move {
+            let t = scheduler_clone
+                .time_till_next_job()
+                .await
+                .expect("Error getting time till next job");
+
+            let state = StateDto {
+                time_before_compil: t.unwrap(),
+            };
+
+            Ok(warp::reply::json(&state)) as Result<_, Rejection>
+        }
+    });
+
+    let openapi_route = warp::path("openapi.json").and_then(|| async move {
+        Ok(warp::reply::with_header(
+            ApiDoc::openapi().to_pretty_json().unwrap(),
+            http::header::CONTENT_TYPE,
+            "application/json",
+        )) as Result<_, Rejection>
+    });
+
+    let routes = main_route
+        .or(page_route)
+        .or(item_route)
+        .or(state_route)
+        .or(openapi_route);
+
     tokio::spawn(async move {
         warp::serve(routes).run(([0, 0, 0, 0], 3030)).await;
     });

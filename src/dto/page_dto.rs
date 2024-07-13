@@ -1,7 +1,8 @@
 use crate::bo::p_s2t_item::PS2tItem;
 use serde::Serialize;
+use utoipa::ToSchema;
 
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 pub struct PageDto {
     pub page_size: i64,
     pub total_pages: i64,
