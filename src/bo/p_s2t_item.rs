@@ -1,9 +1,10 @@
 use diesel::{Queryable, Selectable};
 use serde::Serialize;
 use std::time::SystemTime;
+use utoipa::ToSchema;
 use uuid::Uuid;
 
-#[derive(Queryable, Selectable, Debug, Serialize)]
+#[derive(Queryable, Selectable, Debug, Serialize, ToSchema)]
 #[diesel(table_name = crate::schema::p_s2t_item)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct PS2tItem {

@@ -27,7 +27,6 @@ mod dto;
 mod fetch;
 mod http;
 mod item;
-mod open_api_doc;
 mod schema;
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./migrations");
 pub fn get_connection_pool(url: String) -> Pool<ConnectionManager<PgConnection>> {
@@ -105,8 +104,11 @@ async fn main() {
     );
     println!("✅ headers: {:?}", headers);
 
+    let tokio_pool = pool.clone();
     // HTTP HANDLER
-    http::start_http_handler(sched, pool.clone());
+    tokio::spawn(async move {
+        http::start_http_handler(sched, tokio_pool).await;
+    });
 
     // INDEXER
 

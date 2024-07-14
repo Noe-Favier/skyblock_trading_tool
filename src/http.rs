@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::bo::p_s2t_item::PS2tItem;
 use crate::dto::item_info_dto::ItemInfoDto;
 use crate::dto::page_dto::PageDto;
@@ -10,9 +12,13 @@ use diesel::ExpressionMethods;
 use diesel::{PgConnection, QueryDsl, RunQueryDsl};
 use tokio_cron_scheduler::JobScheduler;
 use utoipa::OpenApi;
-use warp::filters::path::FullPath;
-use warp::{http, Filter, Rejection};
-
+use utoipa_swagger_ui::Config;
+use warp::{
+    http,
+    hyper::{Response, StatusCode},
+    path::{FullPath, Tail},
+    Filter, Rejection, Reply,
+};
 /*
 /page/{page_id}
 /item/{item_name}
@@ -22,23 +28,44 @@ use warp::{http, Filter, Rejection};
 const PAGE_SIZE: i64 = 100;
 
 #[derive(OpenApi)]
-#[openapi()]
+#[openapi(
+    paths(page_route, item_route, state_route),
+    components(schemas(PS2tItem, ItemInfoDto, PageDto, StateDto))
+)]
 struct ApiDoc;
 
-pub fn start_http_handler(scheduler: JobScheduler, pool: Pool<ConnectionManager<PgConnection>>) {
-    let openapi_route = warp::path("openapi.json").and_then(|| async move {
-        Ok(warp::reply::with_header(
-            ApiDoc::openapi().to_pretty_json().unwrap(),
-            http::header::CONTENT_TYPE,
-            "application/json",
-        )) as Result<_, Rejection>
-    });
+pub async fn start_http_handler(
+    scheduler: JobScheduler,
+    pool: Pool<ConnectionManager<PgConnection>>,
+) {
+    let config = Arc::new(Config::from("/api-doc.json"));
+    let scheduler_filter = warp::any().map(move || scheduler.clone());
+    let pool_filter = warp::any().map(move || pool.clone());
 
-    let swaggerui_route = warp::path::end().map(|| {
-        let swagger =
-            SwaggerUi::new("/swagger-ui/<_..>").url("/api-docs/openapi.json", ApiDoc::openapi());
-        warp::reply::html(swagger)
-    });
+    let page_route = warp::path("page")
+        .and(warp::path::param())
+        .and(pool_filter.clone())
+        .and_then(page_route);
+
+    let item_route = warp::path("item")
+        .and(warp::path::param())
+        .and(pool_filter.clone())
+        .and_then(item_route);
+
+    let state_route = warp::path("state")
+        .and(scheduler_filter.clone())
+        .and_then(state_route);
+
+    let openapi_route = warp::path("api-docs")
+        .and(warp::path("openapi.json"))
+        .and_then(openapi_route);
+
+    let swaggerui_route = warp::path("swagger-ui")
+        .and(warp::get())
+        .and(warp::path::full())
+        .and(warp::path::tail())
+        .and(warp::any().map(move || config.clone()))
+        .and_then(serve_swagger);
 
     let routes = swaggerui_route
         .or(page_route)
@@ -46,11 +73,19 @@ pub fn start_http_handler(scheduler: JobScheduler, pool: Pool<ConnectionManager<
         .or(state_route)
         .or(openapi_route);
 
-    tokio::spawn(async move {
-        warp::serve(routes).run(([0, 0, 0, 0], 3030)).await;
-    });
+    warp::serve(routes).run(([0, 0, 0, 0], 3030)).await;
 }
 
+#[utoipa::path(
+    get,
+    path = "/page/{page}",
+    responses(
+        (status = 200, description = "Page of items", body = MyPageDto)
+    ),
+    params(
+        ("page" = i64, Path, description = "Page number")
+    )
+)]
 pub async fn page_route(
     page: i64,
     pool: Pool<ConnectionManager<PgConnection>>,
@@ -81,6 +116,16 @@ pub async fn page_route(
     Ok(warp::reply::json(&p)) as Result<_, Rejection>
 }
 
+#[utoipa::path(
+    get,
+    path = "/item/{item_name}",
+    responses(
+        (status = 200, description = "Item info", body = MyItemInfoDto)
+    ),
+    params(
+        ("item_name" = String, Path, description = "Item name")
+    )
+)]
 pub async fn item_route(
     rq_item_name: String,
     pool_clone: Pool<ConnectionManager<PgConnection>>,
@@ -109,6 +154,13 @@ pub async fn item_route(
     Ok(warp::reply::json(&info)) as Result<_, Rejection>
 }
 
+#[utoipa::path(
+    get,
+    path = "/state",
+    responses(
+        (status = 200, description = "Scheduler state", body = MyStateDto)
+    )
+)]
 pub async fn state_route(mut scheduler: JobScheduler) -> Result<impl warp::Reply, warp::Rejection> {
     let t = scheduler
         .time_till_next_job()
@@ -122,6 +174,49 @@ pub async fn state_route(mut scheduler: JobScheduler) -> Result<impl warp::Reply
     Ok(warp::reply::json(&state)) as Result<_, Rejection>
 }
 
+#[utoipa::path(
+    get,
+    path = "/api-docs/openapi.json",
+    responses(
+        (status = 200, description = "OpenAPI schema", body = String)
+    )
+)]
 pub async fn openapi_route() -> Result<impl warp::Reply, warp::Rejection> {
-    Ok(warp::reply::json(&"openapi_route"))
+    Ok(warp::reply::with_header(
+        ApiDoc::openapi().to_pretty_json().unwrap(),
+        http::header::CONTENT_TYPE,
+        "application/json",
+    )) as Result<_, Rejection>
+}
+
+async fn serve_swagger(
+    full_path: FullPath,
+    tail: Tail,
+    config: Arc<Config<'static>>,
+) -> Result<Box<dyn Reply + 'static>, Rejection> {
+    if full_path.as_str() == "/swagger-ui" {
+        return Ok(Box::new(warp::redirect::found(http::Uri::from_static(
+            "/swagger-ui/",
+        ))));
+    }
+
+    let path = tail.as_str();
+    match utoipa_swagger_ui::serve(path, config.clone()) {
+        Ok(file) => {
+            if let Some(file) = file {
+                Ok(Box::new(
+                    Response::builder()
+                        .header("Content-Type", file.content_type)
+                        .body(file.bytes),
+                ))
+            } else {
+                Ok(Box::new(StatusCode::NOT_FOUND))
+            }
+        }
+        Err(error) => Ok(Box::new(
+            Response::builder()
+                .status(StatusCode::INTERNAL_SERVER_ERROR)
+                .body(error.to_string()),
+        )),
+    }
 }
