@@ -20,6 +20,7 @@ use reqwest::{
 };
 use tokio::time::{sleep, Duration};
 use tokio_cron_scheduler::{Job, JobScheduler};
+use utoipa_swagger_ui::Config;
 
 mod auction_response;
 mod bo;
@@ -104,26 +105,26 @@ async fn main() {
     );
     println!("✅ headers: {:?}", headers);
 
+    // INDEXER
     let tokio_pool = pool.clone();
-    // HTTP HANDLER
     tokio::spawn(async move {
-        http::start_http_handler(sched, tokio_pool).await;
+        println!("--- xxxxxxxx ---");
+        let mut loop_count: u64 = 0;
+        loop {
+            loop_count += 1;
+            println!("--- loop {} ---", loop_count);
+            fetch::fetch_auction(
+                client.clone(),
+                api_url.clone(),
+                headers.clone(),
+                loop_count.clone(),
+                tokio_pool.clone(),
+            );
+            sleep(Duration::from_secs(1)).await;
+        }
     });
 
-    // INDEXER
-
-    println!("--- xxxxxxxx ---");
-    let mut loop_count: u64 = 0;
-    loop {
-        loop_count += 1;
-        println!("--- loop {} ---", loop_count);
-        fetch::fetch_auction(
-            client.clone(),
-            api_url.clone(),
-            headers.clone(),
-            loop_count.clone(),
-            pool.clone(),
-        );
-        sleep(Duration::from_secs(1)).await;
-    }
+    // SERVER
+    let config = Config::from("/api-docs/openapi.json".to_string());
+    http::start_http_handler(sched, pool.clone(), Arc::new(config)).await;
 }

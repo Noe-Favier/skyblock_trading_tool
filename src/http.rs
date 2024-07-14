@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use crate::bo::p_s2t_item::PS2tItem;
+use crate::dto::duration_dto::DurationDto;
 use crate::dto::item_info_dto::ItemInfoDto;
 use crate::dto::page_dto::PageDto;
 use crate::dto::state_dto::StateDto;
@@ -11,7 +12,7 @@ use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::ExpressionMethods;
 use diesel::{PgConnection, QueryDsl, RunQueryDsl};
 use tokio_cron_scheduler::JobScheduler;
-use utoipa::OpenApi;
+use utoipa::{OpenApi, ToSchema};
 use utoipa_swagger_ui::Config;
 use warp::{
     http,
@@ -30,15 +31,15 @@ const PAGE_SIZE: i64 = 100;
 #[derive(OpenApi)]
 #[openapi(
     paths(page_route, item_route, state_route),
-    components(schemas(PS2tItem, ItemInfoDto, PageDto, StateDto))
+    components(schemas(PS2tItem, ItemInfoDto, PageDto, StateDto, DurationDto))
 )]
 struct ApiDoc;
 
 pub async fn start_http_handler(
     scheduler: JobScheduler,
     pool: Pool<ConnectionManager<PgConnection>>,
+    config: Arc<Config<'static>>,
 ) {
-    let config = Arc::new(Config::from("/api-doc.json"));
     let scheduler_filter = warp::any().map(move || scheduler.clone());
     let pool_filter = warp::any().map(move || pool.clone());
 
@@ -80,7 +81,7 @@ pub async fn start_http_handler(
     get,
     path = "/page/{page}",
     responses(
-        (status = 200, description = "Page of items", body = MyPageDto)
+        (status = 200, description = "Page of items", body = PageDto)
     ),
     params(
         ("page" = i64, Path, description = "Page number")
@@ -120,7 +121,7 @@ pub async fn page_route(
     get,
     path = "/item/{item_name}",
     responses(
-        (status = 200, description = "Item info", body = MyItemInfoDto)
+        (status = 200, description = "Item info", body = ItemInfoDto)
     ),
     params(
         ("item_name" = String, Path, description = "Item name")
@@ -158,7 +159,7 @@ pub async fn item_route(
     get,
     path = "/state",
     responses(
-        (status = 200, description = "Scheduler state", body = MyStateDto)
+        (status = 200, description = "Scheduler state", body = StateDto)
     )
 )]
 pub async fn state_route(mut scheduler: JobScheduler) -> Result<impl warp::Reply, warp::Rejection> {
@@ -168,7 +169,9 @@ pub async fn state_route(mut scheduler: JobScheduler) -> Result<impl warp::Reply
         .expect("Error getting time till next job");
 
     let state = StateDto {
-        time_before_compil: t.unwrap(),
+        time_before_compil: DurationDto {
+            secs: t.unwrap().as_secs(),
+        },
     };
 
     Ok(warp::reply::json(&state)) as Result<_, Rejection>

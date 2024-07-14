@@ -1,6 +1,7 @@
 use diesel::{Queryable, Selectable};
 use serde::Serialize;
 use std::time::SystemTime;
+use utoipa::schema;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
