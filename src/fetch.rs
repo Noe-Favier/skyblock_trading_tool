@@ -41,7 +41,7 @@ pub fn fetch_auction(
                 Ok(response_text) => match serde_json::from_str::<S2tAuction>(&response_text) {
                     Ok(auction_response) => {
                         let auction_count = auction_response.auctions.len();
-                        println!("{} - ✅ Auction [{}]", loop_count, auction_count);
+                        //println!("{} - ✅ Auction [{}]", loop_count, auction_count);
 
                         let mut last_auction = LAST_AUCTION.write().unwrap();
                         if last_auction.is_nil() {
@@ -49,7 +49,7 @@ pub fn fetch_auction(
                         }
 
                         if auction_response.auctions[0].auction_id == *last_auction {
-                            println!("{} - ✅ No new auction ({})", loop_count, last_auction);
+                            //println!("{} - ✅ No new auction ({})", loop_count, last_auction);
                         } else {
                             let mut i = 0;
                             let mut new_auctions = 0;
@@ -81,10 +81,10 @@ pub fn fetch_auction(
 
                                             if _err.to_string().contains("s2t_item_pkey") {
                                                 //if primary key violation, we can break the loop
-                                                println!(
-                                                    "{} - 💫 Primary key violated",
-                                                    loop_count
-                                                );
+                                                // println!(
+                                                //     "{} - 💫 Primary key violated",
+                                                //     loop_count
+                                                // );
                                                 break;
                                             } else {
                                                 println!(
