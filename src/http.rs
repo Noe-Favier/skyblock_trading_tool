@@ -74,7 +74,10 @@ pub async fn start_http_handler(
         .or(state_route)
         .or(openapi_route);
 
-    warp::serve(routes).run(([0, 0, 0, 0], 3030)).await;
+    let cors = warp::cors().allow_any_origin();
+    warp::serve(routes.with(cors))
+        .run(([0, 0, 0, 0], 3030))
+        .await;
 }
 
 #[utoipa::path(
