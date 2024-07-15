@@ -1,5 +1,48 @@
 @import './base.css';
 
-body, * {
+body,
+* {
   font-family: 'Lato', sans-serif;
+}
+
+
+/* RARITY */
+.rarity-common {
+  background-color: #FFFFFF80;
+}
+
+.rarity-uncommon {
+  background-color: #55FF5580;
+}
+
+.rarity-rare {
+  background-color: #5555FF80;
+}
+
+.rarity-epic {
+  background-color: #AA00AA80;
+}
+
+.rarity-legendary {
+  background-color: #FFAA0080;
+}
+
+.rarity-mythic {
+  background-color: #FF55FF80;
+}
+
+.rarity-divine {
+  background-color: #55FFFF80;
+}
+
+.rarity-special {
+  background-color: #FF555580;
+}
+
+.rarity-very-special {
+  background-color: #FF555580;
+}
+
+.rarity-ultimate {
+  background-color: #AA000080;
 }

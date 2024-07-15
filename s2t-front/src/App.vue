@@ -34,11 +34,10 @@ nav {
 
 .content {
   display: flex;
-  justify-content: center;
-  align-items: center;
   height: 90vh;
   width: calc(100% - 16px);
   padding: 1vh;
+  overflow-y: auto;
 }
 
 RouterLink {

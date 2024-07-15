@@ -1,19 +1,37 @@
 <script setup lang="ts">
-import ItemComponent from '../components/ItemView.vue'
-let itemList: any = [];
-let page = 0;
+import { ref, onMounted } from 'vue';
+import ItemCardComponent from '../components/ItemCardView.vue';
+import { type Page } from '../models/page';
 
-fetch(`${import.meta.env.VITE_API_URL}/page/${page}`)
-  .then(response => response.json())
-  .then(data => itemList = data.page);
+const page_result = ref<Page | null>(null);
+const page_i = 0;
+
+onMounted(() => {
+  fetch(`${import.meta.env.VITE_API_URL}/page/${page_i}`)
+    .then(response => response.json())
+    .then((data: Page) => {
+      page_result.value = data;
+    });
+});
 </script>
 
 <template>
-  <main>
-    <ul>
-      <li v-for="item in itemList" :key="item.item_uuid">
-        {{ item.item_name }}
-      </li>
-    </ul>
+  <main v-if="page_result?.page">
+    <div v-for="item in page_result.page" :key="item.id">
+      <ItemCardComponent class="item" :item="item" />
+    </div>
   </main>
 </template>
+
+<style scoped>
+main {
+  display: grid;
+  width: 98%;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.item {
+  width: 100%;
+}
+</style>
