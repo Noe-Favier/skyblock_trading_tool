@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import TheWelcome from '../components/TheWelcome.vue'
+import ItemComponent from '../components/ItemView.vue'
 let itemList: any = [];
 let page = 0;
 
