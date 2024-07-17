@@ -5,8 +5,10 @@ import { RouterLink, RouterView } from 'vue-router'
 <template>
   <nav>
     <img alt="Vue logo" class="logo" src="@/assets/logo.svg" width="32px" height="32px" />
-    <RouterLink to="/">Dashboard</RouterLink>
-    <RouterLink to="/about">About</RouterLink>
+    <div class="btn">
+      <RouterLink to="/">Dashboard</RouterLink>
+      <RouterLink to="/about">About</RouterLink>
+    </div>
   </nav>
   <div class="content">
     <RouterView />
@@ -20,16 +22,23 @@ template {
 }
 
 nav {
-  text-align: center;
   display: flex;
   justify-content: flex-start;
-  gap: 2vh;
   width: inherit;
   height: 4vh;
-  padding-left: 3vw;
+  gap: 2vh;
+  padding-left: 1vw;
   align-items: center;
   border-radius: 16px;
   border-bottom: 1px solid #ccc;
+}
+
+.btn {
+  display: flex;
+  justify-content: space-between;
+  flex-grow: 1;
+  padding-right: 1vw;
+
 }
 
 .content {

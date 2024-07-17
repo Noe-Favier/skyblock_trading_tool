@@ -14,7 +14,7 @@ export default defineComponent({
 </script>
 
 <template>
-    <div class="card">
+    <div class="card" v-on:click="() => $router.push({ name: 'item', params: { name: item.item_name_slug } })">
         <div :class="['card-header', `rarity-${item.tier.toLowerCase()}`]">
             <div class="tier">{{ item.tier }}</div>
             <h3 class="card-title">{{ item.item_name }}</h3>
@@ -50,6 +50,7 @@ export default defineComponent({
 
 .card:hover {
     transform: translateY(-10px);
+    cursor: pointer;
 }
 
 .card-header {

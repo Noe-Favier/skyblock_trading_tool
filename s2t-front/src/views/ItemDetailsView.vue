@@ -9,7 +9,7 @@ import type { ItemInfo } from '@/models/item-info';
 
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref } from 'vue';
 import { useRoute } from 'vue-router';
 
 let itemDetails = ref<ItemInfo | undefined>(undefined);
