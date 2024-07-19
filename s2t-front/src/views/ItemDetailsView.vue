@@ -11,6 +11,7 @@ import type { ItemInfo } from '@/models/item-info';
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useRoute } from 'vue-router';
+import { LineChart } from 'vue-chart-3';
 
 let itemDetails = ref<ItemInfo | undefined>(undefined);
 const route = useRoute();
@@ -35,7 +36,9 @@ fetch(`${import.meta.env.VITE_API_URL}/item/${route.params.name}`)
         </div>
 
         <div>
-            CHART GOES HERE
+            <!--
+            <LineChart .... />
+            -->
         </div>
     </div>
 </template>
