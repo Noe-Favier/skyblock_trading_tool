@@ -29,7 +29,7 @@ nav {
   gap: 2vh;
   padding-left: 1vw;
   align-items: center;
-  border-radius: 16px;
+  border-radius: 0 0 16px 16px;
   border-bottom: 1px solid #ccc;
 }
 

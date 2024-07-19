@@ -24,8 +24,10 @@ fetch(`${import.meta.env.VITE_API_URL}/item/${route.params.name}`)
 </script>
 
 <template>
-    <div v-if="itemDetails">
-        <h1 class="title">{{ itemDetails.item.item_name }}</h1>
+    <div v-if="itemDetails" class="master">
+        <h1 class="title" :class="['decoration-rarity-' + itemDetails.item.tier.toLowerCase()]">
+            {{ itemDetails.item.item_name }}
+        </h1>
         <div>
             <p>actual bid : {{ itemDetails.item.bid }}</p>
             <p>category : {{ itemDetails.item.category }}</p>
@@ -40,6 +42,14 @@ fetch(`${import.meta.env.VITE_API_URL}/item/${route.params.name}`)
 
 <style scoped>
 .title {
-    border-bottom: 1rem solid;
+    width: fit-content;
+    text-decoration: underline;
+}
+
+.master {
+    background-color: #FFF !important;
+    padding: 0 1%;
+    width: 100%;
+    border-radius: 12px;
 }
 </style>

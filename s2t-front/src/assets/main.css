@@ -1,48 +1,88 @@
-@import './base.css';
+@import "./base.css";
 
-body,
-* {
-  font-family: 'Lato', sans-serif;
+body {
+  padding-top: 0 !important;
+  margin-top: 0 !important;
 }
 
+body,
+#app,
+#app > div {
+  background-color: #dbdbdb !important;
+}
+
+nav {
+  background-color: #fff !important;
+}
 
 /* RARITY */
 .rarity-common {
-  background-color: #FFFFFF80;
+  background-color: #ffffff80 !important;
 }
 
 .rarity-uncommon {
-  background-color: #55FF5580;
+  background-color: #55ff5580 !important;
 }
 
 .rarity-rare {
-  background-color: #5555FF80;
+  background-color: #5555ff80 !important;
 }
 
 .rarity-epic {
-  background-color: #AA00AA80;
+  background-color: #aa00aa80 !important;
 }
 
 .rarity-legendary {
-  background-color: #FFAA0080;
+  background-color: #ffaa0080 !important;
 }
 
 .rarity-mythic {
-  background-color: #FF55FF80;
+  background-color: #ff55ff80 !important;
 }
 
 .rarity-divine {
-  background-color: #55FFFF80;
+  background-color: #55ffff80 !important;
 }
 
 .rarity-special {
-  background-color: #FF555580;
+  background-color: #ff555580 !important;
 }
 
 .rarity-very-special {
-  background-color: #FF555580;
+  background-color: #ff555580 !important;
 }
 
 .rarity-ultimate {
-  background-color: #AA000080;
+  background-color: #aa000080 !important;
+}
+
+.decoration-rarity-common {
+  text-decoration-color: #ffffff80 !important;
+}
+.decoration-rarity-uncommon {
+  text-decoration-color: #55ff5580 !important;
+}
+.decoration-rarity-rare {
+  text-decoration-color: #5555ff80 !important;
+}
+.decoration-rarity-epic {
+  text-decoration-color: #aa00aa80 !important;
+}
+.decoration-rarity-legendary {
+  text-decoration-color: #ffaa0080 !important;
+}
+.decoration-rarity-mythic {
+  text-decoration-color: #ff55ff80 !important;
+}
+.decoration-rarity-divine {
+  text-decoration-color: #55ffff80 !important;
+}
+.decoration-rarity-special {
+  text-decoration-color: #ff555580 !important;
+}
+.decoration-rarity-very-special {
+  text-decoration-color: #ff555580 !important;
+}
+.decoration-rarity-ultimate {
+  text-decoration-color: #aa000080 !important;
 }
