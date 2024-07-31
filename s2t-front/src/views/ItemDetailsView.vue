@@ -32,14 +32,14 @@ const chartData = ref<ChartData<'line', number[], unknown>>({
     labels: [] as string[],
     datasets: [
         {
-            label: 'Prix de Vente',
+            label: 'Sell Price',
             data: [] as number[],
             borderColor: 'rgba(75, 192, 192, 1)',
             yAxisID: 'y-axis-1',
             type: 'line',
         },
         {
-            label: 'Nombre de Ventes',
+            label: 'Sell Number',
             data: [] as number[],
             borderColor: 'rgba(153, 102, 255, 1)',
             backgroundColor: 'rgba(153, 102, 255, 0.2)',
@@ -63,11 +63,13 @@ const chartOptions = ref({
     scales: {
         y: {
             beginAtZero: true,
+            grace: '5%',
+            offset: true,
         },
         'y-axis-1': {
             type: 'linear',
             display: true,
-            position: 'left',
+            position: 'right',
         },
         'y-axis-2': {
             type: 'linear',
@@ -77,22 +79,27 @@ const chartOptions = ref({
                 drawOnChartArea: false,
             },
         }
+    },
+    animation: {
+        duration: 0, // Désactiver les animations
     }
 });
 
-// Populate chart data once itemDetails is loaded
-let construct
-
-
 watchEffect(() => {
     if (itemDetails.value) {
-        const labels = itemDetails.value.versions.map(version => formatDate(version.created_at.secs_since_epoch));
-        const bidData = itemDetails.value.versions.map(version => version.bid);
-        const sellNumberData = itemDetails.value.versions.map(version => version.sell_number);
+        const labels = itemDetails.value.versions.map(version => formatDate(version.created_at.secs_since_epoch)).reverse();
+        const bidData = itemDetails.value.versions.map(version => version.bid).reverse();
+        const sellNumberData = itemDetails.value.versions.map(version => version.sell_number).reverse();
 
         chartData.value.labels = labels;
         chartData.value.datasets[0].data = bidData;
         chartData.value.datasets[1].data = sellNumberData;
+    }
+
+    if (itemFilter.value) {
+        chartData.value.labels = (chartData.value.labels || []).slice(-5);
+        chartData.value.datasets[0].data = (chartData.value.datasets[0].data || []).slice(-5);
+        chartData.value.datasets[1].data = (chartData.value.datasets[1].data || []).slice(-5);
     }
 });
 
@@ -105,7 +112,9 @@ watchEffect(() => {
             {{ itemDetails.item.item_name }}
         </h1>
         <div>
-            <p>actual bid : {{ itemDetails.item.bid }}</p>
+            <p class="strong">actual bid : {{ itemDetails.item.bid.toString().split('').reverse().reduce((n, acc, i) =>
+                `${acc}${i %
+                    3 == 0 ? ' ' : ''}${n}`) }}</p>
             <p>category : {{ itemDetails.item.category }}</p>
             <p>tier : {{ itemDetails.item.tier }}</p>
         </div>
@@ -113,6 +122,7 @@ watchEffect(() => {
         <div>
             <LineChart :chart-data="chartData" :chart-options="chartOptions" />
         </div>
+
         <div>
             <label for="filter">Filter only recent</label>
             <input type="checkbox" id="filter" v-model="itemFilter" />
@@ -131,5 +141,10 @@ watchEffect(() => {
     padding: 0 1%;
     width: 100%;
     border-radius: 12px;
+}
+
+.strong {
+    font-weight: bold;
+    font-size: 1.2em;
 }
 </style>

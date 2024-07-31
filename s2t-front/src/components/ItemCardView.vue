@@ -30,35 +30,36 @@ export default defineComponent({
 .card {
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
     border-radius: 10px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     overflow: hidden;
     transition: transform 0.2s;
     margin: 1rem;
-}
-
-.tier {
-    transform: rotate(-90deg);
-    font: 8px sans-serif;
-    margin: 0;
-    padding: 0;
-    text-align: center;
-    width: 50px;
-    height: 23px;
+    cursor: pointer;
 }
 
 .card:hover {
     transform: translateY(-10px);
-    cursor: pointer;
 }
 
 .card-header {
     display: flex;
+    align-items: center;
+    justify-content: space-between;
     padding: 1rem;
-    padding-left: 0;
+    background-color: #f8f9fa;
     border-bottom: 1px solid #e9ecef;
-    text-align: center;
+}
+
+.tier {
+    font-size: 0.85rem;
+    font-weight: bold;
+    color: #fff;
+    padding: 0.25rem 0.5rem;
+    border-radius: 5px;
+    text-transform: uppercase;
+    background-color: #6c757d;
+    /* Default background for tier */
 }
 
 .card-title {
@@ -72,7 +73,8 @@ export default defineComponent({
     padding: 1rem;
 }
 
-.card-description {
+.category,
+.bid {
     margin: 0;
     font-size: 1rem;
     color: #6c757d;
