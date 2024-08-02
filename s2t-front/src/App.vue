@@ -45,7 +45,7 @@ nav {
   display: flex;
   height: 90vh;
   width: calc(100% - 16px);
-  padding: 1vh;
+  padding-top: 1vh;
   overflow-y: auto;
 }
 

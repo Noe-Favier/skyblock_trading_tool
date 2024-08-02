@@ -16,12 +16,20 @@ export default defineComponent({
 <template>
     <div class="card" v-on:click="() => $router.push({ name: 'item', params: { name: item.item_name_slug } })">
         <div :class="['card-header', `rarity-${item.tier.toLowerCase()}`]">
-            <div class="tier">{{ item.tier }}</div>
+            <div class="chip-group">
+                <div class="tier">{{ item.tier }}</div>
+                <div class="category">{{ item.category }}</div>
+            </div>
             <h3 class="card-title">{{ item.item_name }}</h3>
         </div>
         <div class="card-body">
-            <p class="category">{{ item.category }}</p>
-            <p class="bid">{{ item.bid }}</p>
+            <p>
+                <span>sold price : </span><span class="bid">
+                    {{ item.bid.toString().split('').reverse().reduce((n, acc, i) => `${acc}${i % 3 == 0 ? ' ' :
+                        ''}${n}`) }}
+                </span>
+            </p>
+            <p><span>sold recently : </span><span class="bid">{{ item.sell_number }}</span></p>
         </div>
     </div>
 </template>
@@ -62,6 +70,16 @@ export default defineComponent({
     /* Default background for tier */
 }
 
+.category {
+    font-size: 0.65rem;
+    font-weight: bold;
+    color: #7c7575;
+    padding: 0.25rem 0.5rem;
+    border-radius: 5px;
+    text-transform: uppercase;
+    background-color: #bac4cc;
+}
+
 .card-title {
     margin: 0;
     font-size: 1.25rem;
@@ -73,10 +91,17 @@ export default defineComponent({
     padding: 1rem;
 }
 
-.category,
 .bid {
     margin: 0;
-    font-size: 1rem;
-    color: #6c757d;
+    font-size: 1.1rem;
+    color: #383d41;
+    font-weight: bold;
+}
+
+.chip-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding-right: 0.5rem;
 }
 </style>

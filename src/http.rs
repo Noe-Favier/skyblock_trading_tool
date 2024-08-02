@@ -5,14 +5,15 @@ use crate::dto::duration_dto::DurationDto;
 use crate::dto::item_info_dto::ItemInfoDto;
 use crate::dto::page_dto::PageDto;
 use crate::dto::state_dto::StateDto;
+use crate::item;
 use crate::schema::p_s2t_item::dsl::p_s2t_item;
-use crate::schema::p_s2t_item::dsl::{created_at, item_name, item_name_slug};
+use crate::schema::p_s2t_item::dsl::{created_at, item_name, item_name_slug, sell_number};
 use diesel::dsl::count_distinct;
 use diesel::r2d2::{ConnectionManager, Pool};
-use diesel::ExpressionMethods;
+use diesel::{ExpressionMethods, PgTextExpressionMethods};
 use diesel::{PgConnection, QueryDsl, RunQueryDsl};
 use tokio_cron_scheduler::JobScheduler;
-use utoipa::{OpenApi, ToSchema};
+use utoipa::OpenApi;
 use utoipa_swagger_ui::Config;
 use warp::{
     http,
@@ -45,6 +46,8 @@ pub async fn start_http_handler(
 
     let page_route = warp::path("page")
         .and(warp::path::param())
+        //get args
+        .and(warp::query::<Vec<(String, String)>>())
         .and(pool_filter.clone())
         .and_then(page_route);
 
@@ -87,27 +90,56 @@ pub async fn start_http_handler(
         (status = 200, description = "Page of items", body = PageDto)
     ),
     params(
-        ("page" = i64, Path, description = "Page number")
+        ("page" = i64, Path, description = "Page number"),
+        ("get_args" = Vec<(String, String)>, Query, description = "Search by name or ordering queries", example = "{search: 'query...', order_field: '...', order_type: 'asc/desc'}")
     )
 )]
 pub async fn page_route(
     page: i64,
+    get_args: Vec<(String, String)>,
     pool: Pool<ConnectionManager<PgConnection>>,
 ) -> Result<impl warp::Reply, warp::Rejection> {
     let conn = &mut pool.get().unwrap();
 
-    let items: Vec<PS2tItem> = p_s2t_item
+    //item query
+    let mut i_q = p_s2t_item
         .distinct_on(item_name)
         .limit(PAGE_SIZE)
         .order_by((item_name, created_at.desc()))
         .offset(page * PAGE_SIZE)
-        .load::<PS2tItem>(conn)
-        .expect("Error loading items");
+        .into_boxed();
 
-    let items_count: i64 = p_s2t_item
-        .select(count_distinct(item_name))
-        .get_result(conn)
-        .expect("Error counting items");
+    let mut sorting_column;
+    if get_args.len() > 0 {
+        for (k, v) in get_args {
+            match k.as_str() {
+                "search" => {
+                    i_q = i_q.filter(item_name.ilike(format!("%{}%", v)));
+                }
+
+                "order_field" => match v.as_str() {
+                    "item_name" => {
+                        i_q = i_q.order_by(item_name.asc());
+                    }
+                    "created_at" => {
+                        i_q = i_q.order_by(created_at.asc());
+                    }
+                    "sell_number" => {
+                        i_q = i_q.order_by(sell_number.asc());
+                    }
+                    _ => {}
+                },
+
+                _ => {}
+            }
+        }
+    }
+
+    //item count query
+    let ic_q = p_s2t_item.select(count_distinct(item_name));
+
+    let items: Vec<PS2tItem> = i_q.load::<PS2tItem>(conn).expect("Error loading items");
+    let items_count: i64 = ic_q.get_result(conn).expect("Error counting items");
 
     let p: PageDto = PageDto {
         page_size: PAGE_SIZE,
